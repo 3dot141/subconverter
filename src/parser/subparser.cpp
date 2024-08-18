@@ -1259,6 +1259,9 @@ void explodeShadowrocket(std::string rocket, Proxy &node)
     if(port == "0")
         return;
     remarks = urlDecode(getUrlArg(addition, "remarks"));
+    if (remarks.empty()) {
+        remarks = urlDecode(getUrlArg(addition, "remark"));
+    }
     obfs = getUrlArg(addition, "obfs");
     if(!obfs.empty())
     {

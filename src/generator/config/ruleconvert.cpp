@@ -140,7 +140,7 @@ void rulesetToClash(YAML::Node &base_rule, std::vector<RulesetContent> &ruleset_
         if(global.maxAllowedRules && total_rules > global.maxAllowedRules)
             break;
         rule_group = x.rule_group;
-        retrieved_rules = x.rule_content.get();
+        retrieved_rules = x.rule_content;
         if(retrieved_rules.empty())
         {
             writeLog(0, "Failed to fetch ruleset or ruleset is empty: '" + x.rule_path + "'!", LOG_LEVEL_WARNING);
@@ -211,7 +211,7 @@ std::string rulesetToClashStr(YAML::Node &base_rule, std::vector<RulesetContent>
         if(global.maxAllowedRules && total_rules > global.maxAllowedRules)
             break;
         rule_group = x.rule_group;
-        retrieved_rules = x.rule_content.get();
+        retrieved_rules = x.rule_content;
         if(retrieved_rules.empty())
         {
             writeLog(0, "Failed to fetch ruleset or ruleset is empty: '" + x.rule_path + "'!", LOG_LEVEL_WARNING);
@@ -306,7 +306,7 @@ void rulesetToSurge(INIReader &base_rule, std::vector<RulesetContent> &ruleset_c
         rule_path_typed = x.rule_path_typed;
         if(rule_path.empty())
         {
-            strLine = x.rule_content.get().substr(2);
+            strLine = x.rule_content.substr(2);
             if(strLine == "MATCH")
                 strLine = "FINAL";
             if(surge_ver == -1 || surge_ver == -2)
@@ -391,7 +391,7 @@ void rulesetToSurge(INIReader &base_rule, std::vector<RulesetContent> &ruleset_c
             }
             else
                 continue;
-            retrieved_rules = x.rule_content.get();
+            retrieved_rules = x.rule_content;
             if(retrieved_rules.empty())
             {
                 writeLog(0, "Failed to fetch ruleset or ruleset is empty: '" + x.rule_path + "'!", LOG_LEVEL_WARNING);
@@ -549,7 +549,7 @@ void rulesetToSingBox(rapidjson::Document &base_rule, std::vector<RulesetContent
         if(global.maxAllowedRules && total_rules > global.maxAllowedRules)
             break;
         rule_group = x.rule_group;
-        retrieved_rules = x.rule_content.get();
+        retrieved_rules = x.rule_content;
         if(retrieved_rules.empty())
         {
             writeLog(0, "Failed to fetch ruleset or ruleset is empty: '" + x.rule_path + "'!", LOG_LEVEL_WARNING);

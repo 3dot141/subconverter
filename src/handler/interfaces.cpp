@@ -157,7 +157,7 @@ std::string getRuleset(RESPONSE_CALLBACK_ARGS)
     refreshRulesets(confs, rca);
     for(RulesetContent &x : rca)
     {
-        std::string content = x.rule_content.get();
+        std::string content = x.rule_content;
         output_content += convertRuleset(content, x.rule_type);
     }
 

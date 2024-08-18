@@ -65,13 +65,13 @@ namespace toml
                 conf.Type = ProxyGroupType::SSID;
                 break;
             default:
-                throw toml::syntax_error("Proxy Group has incorrect type, should be one of following:\n  select, url-test, load-balance, fallback, relay, ssid", v.at("type").location());
+                throw std::runtime_error("Proxy Group has incorrect type, should be one of following:\n  select, url-test, load-balance, fallback, relay, ssid");
             }
             conf.Timeout = toml::find_or(v, "timeout", 5);
             conf.Proxies = toml::find_or<StrArray>(v, "rule", {});
             conf.UsingProvider = toml::find_or<StrArray>(v, "use", {});
             if(conf.Proxies.empty() && conf.UsingProvider.empty())
-                throw toml::syntax_error("Proxy Group must contains at least one of proxy match rule or provider", v.location());
+                throw std::runtime_error("Proxy Group must contains at least one of proxy match rule or provider");
             if(v.contains("disable-udp"))
                 conf.DisableUdp = toml::find_or(v, "disable-udp", conf.DisableUdp.get());
             return conf;
@@ -121,8 +121,8 @@ namespace toml
             case "clash-classic"_hash:
                 conf.Url = type + ":";
                 break;
-            default:
-                throw toml::syntax_error("Ruleset has incorrect type, should be one of following:\n  surge-ruleset, quantumultx, clash-domain, clash-ipcidr, clash-classic", v.at("type").location());
+                default:
+                throw std::runtime_error("Ruleset has incorrect type, should be one of following:\n  surge-ruleset, quantumultx, clash-domain, clash-ipcidr, clash-classic");
             }
             conf.Url += toml::find<String>(v, "ruleset");
             conf.Interval = toml::find_or<Integer>(v, "interval", 86400);

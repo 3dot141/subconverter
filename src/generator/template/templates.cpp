@@ -330,7 +330,7 @@ int renderClashScript(YAML::Node &base_rule, std::vector<RulesetContent> &rulese
         rule_path_typed = x.rule_path_typed;
         if(rule_path.empty())
         {
-            strLine = x.rule_content.get().substr(2);
+            strLine = x.rule_content.substr(2);
             if(script)
             {
                 if(startsWith(strLine, "MATCH") || startsWith(strLine, "FINAL"))
@@ -406,7 +406,7 @@ int renderClashScript(YAML::Node &base_rule, std::vector<RulesetContent> &rulese
                     continue;
             }
 
-            retrieved_rules = x.rule_content.get();
+            retrieved_rules = x.rule_content;
             if(retrieved_rules.empty())
             {
                 writeLog(0, "Failed to fetch ruleset or ruleset is empty: '" + x.rule_path + "'!", LOG_LEVEL_WARNING);

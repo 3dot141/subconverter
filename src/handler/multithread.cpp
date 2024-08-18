@@ -5,6 +5,8 @@
 #include "utils/network.h"
 #include "webget.h"
 #include "multithread.h"
+
+#include <iostream>
 //#include "vfs.h"
 
 //safety lock for multi-thread
@@ -63,7 +65,8 @@ std::shared_future<std::string> fetchFileAsync(const std::string &path, const st
     std::shared_future<std::string> retVal;
     /*if(vfs::vfs_exist(path))
         retVal = std::async(std::launch::async, [path](){return vfs::vfs_get(path);});
-    else */if(find_local && fileExist(path, true))
+    else */
+    if(find_local && fileExist(path, true))
         retVal = std::async(std::launch::async, [path](){return fileGet(path, true);});
     else if(isLink(path))
         retVal = std::async(std::launch::async, [path, proxy, cache_ttl](){return webGet(path, proxy, cache_ttl);});
@@ -76,5 +79,9 @@ std::shared_future<std::string> fetchFileAsync(const std::string &path, const st
 
 std::string fetchFile(const std::string &path, const std::string &proxy, int cache_ttl, bool find_local)
 {
-    return fetchFileAsync(path, proxy, cache_ttl, find_local, false).get();
+    auto retVal = std::async(std::launch::async, []() -> std::string {
+        std::cout << "Lambda function is executing." << std::endl;
+        return std::string("Hello, World!");
+    });
+    return retVal.get();
 }

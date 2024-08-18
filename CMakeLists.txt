@@ -1,6 +1,7 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 3.4)
+
 PROJECT(subconverter LANGUAGES CXX)
 SET(BUILD_TARGET_NAME ${PROJECT_NAME})
-CMAKE_MINIMUM_REQUIRED(VERSION 3.4)
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/include/")
 
@@ -14,6 +15,16 @@ IF(NOT MSVC)
 ELSE()
     ADD_COMPILE_OPTIONS(/W4)
 ENDIF()
+
+
+# 设置项目的编译类型为 Release
+set(CMAKE_BUILD_TYPE DEBUG)
+
+# 指定 C++ 标准
+#set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+# 设置全局的链接器标志以进行静态链接
+set(CMAKE_EXE_LINKER_FLAGS "-static")
 
 #remove std::regex support since it is not compatible with group modifiers and slow
 #OPTION(USING_STD_REGEX "Use std::regex from C++ library instead of PCRE2." OFF)
