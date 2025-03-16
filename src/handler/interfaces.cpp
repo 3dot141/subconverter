@@ -133,6 +133,41 @@ void matchUserAgent(const std::string &user_agent, std::string &target, tribool 
     }
 }
 
+// 定义一个规则类型映射表
+std::map<std::string, std::string> ruleTypeMap = {
+    {"HOST-SUFFIX", "DOMAIN-SUFFIX"},
+    {"host-suffix", "DOMAIN-SUFFIX"},
+    {"ip-cidr", "IP-CIDR"},
+    {"ip6-cidr", "IP-CIDR6"},
+    {"host", "DOMAIN"},
+    {"host-keyword", "DOMAIN-KEYWORD"}
+    // 可以添加更多的映射关系
+};
+
+std::string simpleJoin(const string_array& arr, const std::string& delimiter) {
+    if(arr.empty())
+        return "";
+
+    std::string result = arr[0];
+    for(size_t i = 1; i < arr.size(); i++) {
+        result += delimiter + arr[i];
+    }
+    return result;
+}
+
+std::string processRuleLine(const std::string& strLine) {
+    string_array parts = split(strLine, ",");
+    if(parts.empty())
+        return strLine;
+
+    auto it = ruleTypeMap.find(parts[0]);
+    if(it != ruleTypeMap.end()) {
+        parts[0] = it->second;
+    }
+
+    return simpleJoin(parts, ",");
+}
+
 std::string getRuleset(RESPONSE_CALLBACK_ARGS)
 {
     auto &argument = request.argument;
@@ -191,6 +226,9 @@ std::string getRuleset(RESPONSE_CALLBACK_ARGS)
         pose -= posb;
         return 0;
     };
+
+    // convertRuleSet to normal format
+    strLine = processRuleLine(strLine);
 
     lineSize = output_content.size();
     output_content.clear();
