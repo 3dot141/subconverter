@@ -144,6 +144,37 @@ std::map<std::string, std::string> ruleTypeMap = {
     // 可以添加更多的映射关系
 };
 
+std::string getNodes(RESPONSE_CALLBACK_ARGS) {
+
+    auto &argument = request.argument;
+    int *status_code = &response.status_code;
+
+    if (getUrlArg(argument, "token") != global.accessToken) {
+        *status_code = 403;
+        return "Forbidden";
+    }
+
+    // 获取类型， 大概率是 Quantumult X - 2
+    std::string type = getUrlArg(argument, "type");
+    int type_int = to_int(type, 0);
+
+    if (type_int == 2) {
+        if (fileExist("quanx_conf.ini")) {
+            INIReader ini;
+            if (ini.parse_file("quanx_conf.ini") == INIREADER_EXCEPTION_NONE && ini.section_exist("server_local")) {
+                string result;
+                ini.get_section_content("server_local", result);
+                *status_code = 200;
+                return result;
+            }
+        }
+    }
+    *status_code = 404;
+    return "Not Found";
+
+}
+
+
 std::string getRuleset(RESPONSE_CALLBACK_ARGS)
 {
     auto &argument = request.argument;

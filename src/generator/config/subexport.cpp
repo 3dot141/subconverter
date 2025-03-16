@@ -1416,7 +1416,6 @@ std::string proxyToQuanX(std::vector<Proxy> &nodes, const std::string &base_conf
     ini.add_direct_save_section("rewrite_local");
     ini.add_direct_save_section("task_local");
     ini.add_direct_save_section("mitm");
-    ini.add_direct_save_section("server_remote");
     if(!ext.nodelist && ini.parse(base_conf) != 0)
     {
         writeLog(0, "QuantumultX base loader failed with error: " + ini.get_last_error(), LOG_LEVEL_ERROR);
@@ -1429,11 +1428,20 @@ std::string proxyToQuanX(std::vector<Proxy> &nodes, const std::string &base_conf
     {
         string_array allnodes;
         std::string allLinks;
+
         ini.get_all("server_local", "{NONAME}", allnodes);
         if(!allnodes.empty())
             allLinks = join(allnodes, "\n");
         return allLinks;
     }
+
+    ini.to_file("quanx_conf.ini");
+
+    ini.erase_section("server_local");
+    ini.set_current_section("server_remote");
+    ini.erase_section();
+    ini.set("{NONAME}", ext.managed_config_prefix + "/getNodes?type=2&token=" + global.accessToken + ", tag=airport, enabled=true");
+
     return ini.to_string();
 }
 

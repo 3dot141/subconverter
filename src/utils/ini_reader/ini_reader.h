@@ -378,6 +378,21 @@ public:
         return save_error_and_return(INIREADER_EXCEPTION_NONE);
     }
 
+    int get_section_content(const std::string &section_name, string &content)
+    {
+        if(!section_exist(section_name))
+            return save_error_and_return(INIREADER_EXCEPTION_EMPTY);
+        auto section = ini_content.at(section_name);
+        for(auto & it : section) {
+            if (it.first != "{NONAME}")
+                content += it.first + " = ";
+            string itemVal = it.second;
+            processEscapeCharReverse(itemVal);
+            content += itemVal + "\n";
+        }
+        return save_error_and_return(INIREADER_EXCEPTION_NONE);
+    }
+
     /**
     *  @brief set current section.
     */

@@ -18,6 +18,7 @@ std::string convertRuleset(const std::string &content, int type);
 
 std::string getProfile(RESPONSE_CALLBACK_ARGS);
 std::string getRuleset(RESPONSE_CALLBACK_ARGS);
+std::string getNodes(RESPONSE_CALLBACK_ARGS);
 
 std::string subconverter(RESPONSE_CALLBACK_ARGS);
 std::string simpleToClashR(RESPONSE_CALLBACK_ARGS);
