@@ -79,9 +79,5 @@ std::shared_future<std::string> fetchFileAsync(const std::string &path, const st
 
 std::string fetchFile(const std::string &path, const std::string &proxy, int cache_ttl, bool find_local)
 {
-    auto retVal = std::async(std::launch::async, []() -> std::string {
-        std::cout << "Lambda function is executing." << std::endl;
-        return std::string("Hello, World!");
-    });
-    return retVal.get();
+    return fetchFileAsync(path, proxy, cache_ttl, find_local, false).get();;
 }
