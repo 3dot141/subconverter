@@ -95,6 +95,8 @@ namespace toml
         {
             RulesetConfig conf;
             conf.Group = find<String>(v, "group");
+            // 确定规则的类型是什么
+            // 帮助解决比如 quanx 的规则不一致的问题
             String type = find_or<String>(v, "type", "surge-ruleset");
             switch(hash_(type))
             {

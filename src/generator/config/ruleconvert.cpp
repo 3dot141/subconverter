@@ -89,6 +89,7 @@ std::string convertRuleset(const std::string &content, int type)
     }
     else /// QuanX
     {
+        // read: 处理 quanx 的配置和别人的配置不一样
         output = regReplace(regReplace(content, "^(?i:host)", "DOMAIN", true), "^(?i:ip6-cidr)", "IP-CIDR6", true); //translate type
         output = regReplace(output, "^((?i:DOMAIN(?:-(?:SUFFIX|KEYWORD))?|IP-CIDR6?|USER-AGENT),)\\s*?(\\S*?)(?:,(?!no-resolve).*?)(,no-resolve)?$", "\\U$1\\E$2${3:-}", true); //remove group
         return output;
