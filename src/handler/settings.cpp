@@ -261,7 +261,7 @@ void refreshRulesets(RulesetConfigs &ruleset_list, std::vector<RulesetContent> &
         if(pos != std::string::npos)
         {
             writeLog(0, "Adding rule '" + rule_url.substr(pos + 2) + "," + rule_group + "'.", LOG_LEVEL_INFO);
-            rc = {rule_group, "", "", RULESET_SURGE,  rule_url.substr(pos), 0};
+            rc = {rule_group, "", "", RULESET_SURGE, std::async(std::launch::async, [=](){return rule_url.substr(pos);}), 0};
         }
         else
         {
@@ -274,7 +274,7 @@ void refreshRulesets(RulesetConfigs &ruleset_list, std::vector<RulesetContent> &
                 type = iter->second;
             }
             writeLog(0, "Updating ruleset url '" + rule_url + "' with group '" + rule_group + "'.", LOG_LEVEL_INFO);
-            rc = {rule_group, rule_url, rule_url_typed, type, fetchFile(rule_url, proxy, global.cacheRuleset, true), x.Interval};
+            rc = {rule_group, rule_url, rule_url_typed, type, fetchFileAsync(rule_url, proxy, global.cacheRuleset, true, global.asyncFetchRuleset), x.Interval};
         }
         ruleset_content_array.emplace_back(std::move(rc));
     }
@@ -567,13 +567,13 @@ void readYAMLConf(YAML::Node &node)
 }
 
 template <class T, class... U>
-void find_if_exist(const toml::value &v, const std::string &k, T& target, U&&... args)
+void find_if_exist(const toml::value &v, const toml::value::key_type &k, T& target, U&&... args)
 {
     if(v.contains(k)) target = toml::find<T>(v, k);
     if constexpr (sizeof...(args) > 0) find_if_exist(v, std::forward<U>(args)...);
 }
 
-void operate_toml_kv_table(const std::vector<toml::table> &arr, const std::string &key_name, const std::string &value_name, std::function<void (const toml::value&, const toml::value&)> binary_op)
+void operate_toml_kv_table(const std::vector<toml::table> &arr, const toml::value::key_type &key_name, const toml::value::key_type &value_name, std::function<void (const toml::value&, const toml::value&)> binary_op)
 {
     for(const toml::table &table : arr)
     {
