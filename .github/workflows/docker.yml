@@ -78,3 +78,7 @@ jobs:
           push: true
           build-args: |
             SHA=${{ steps.vars.outputs.sha_short }}
+
+      - name: Trigger dokploy redeploy
+        run: |
+          curl -X GET https://service.yes365.fun:40020/api/deploy/ibIXdLmbo8-NNQJQ9GID5
