@@ -26,8 +26,6 @@ jobs:
         include:
           - platform: linux/amd64
             os: ubuntu-latest
-          - platform: linux/386
-            os: ubuntu-latest
     runs-on: ${{ matrix.os }}
     name: Build ${{ matrix.platform }} Image
     steps:
@@ -79,9 +77,13 @@ jobs:
           build-args: |
             SHA=${{ steps.vars.outputs.sha_short }}
 
+  trigger_dokploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
       - name: Trigger dokploy redeploy
         run: |
           curl -X POST https://service.yes365.fun:40020/api/deploy/ibIXdLmbo8-NNQJQ9GID5 \
             -H "x-github-event: push" \
             -H "Content-Type: application/json" \
-            -d "{\"ref\": \"${{ github.ref }}\"}" 
+            -d "{\"ref\": \"${{ github.ref }}\"}"
