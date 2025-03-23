@@ -148,8 +148,9 @@ std::string getNodes(RESPONSE_CALLBACK_ARGS) {
 
     auto &argument = request.argument;
     int *status_code = &response.status_code;
+    auto token = getUrlArg(argument, "token");
 
-    if (getUrlArg(argument, "token") != global.accessToken) {
+    if (token != global.accessToken) {
         *status_code = 403;
         return "Forbidden";
     }
@@ -159,21 +160,34 @@ std::string getNodes(RESPONSE_CALLBACK_ARGS) {
     int type_int = to_int(type, 0);
 
     if (type_int == 2) {
-        if (fileExist("quanx_conf.ini")) {
-            INIReader ini;
-            if (ini.parse_file("quanx_conf.ini") == INIREADER_EXCEPTION_NONE && ini.section_exist("server_local")) {
-                string result;
-                ini.get_section_content("server_local", result);
-                *status_code = 200;
-                return result;
-            }
+
+        if (!fileExist("quanx_conf.ini")) {
+
+            // 转发一个请求，执行 sub
+            Request sub_request;
+            Response sub_response;
+            sub_response.status_code = 200;
+
+            // Copy relevant arguments from the original request
+            sub_request.argument = argument;
+            sub_request.argument.emplace("target", "quanx");
+            sub_request.headers = request.headers;
+
+            // Call the subconverter function to process the request
+            std::string result = subconverter(sub_request, sub_response);
+        }
+
+        INIReader ini;
+        if (ini.parse_file("quanx_conf.ini") == INIREADER_EXCEPTION_NONE && ini.section_exist("server_local")) {
+            string result;
+            ini.get_section_content("server_local", result);
+            *status_code = 200;
+            return result;
         }
     }
     *status_code = 404;
     return "Not Found";
-
 }
-
 
 std::string getRuleset(RESPONSE_CALLBACK_ARGS)
 {
