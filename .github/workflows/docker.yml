@@ -83,7 +83,7 @@ jobs:
     steps:
       - name: Trigger dokploy redeploy
         run: |
-          curl -X POST https://service.yes365.fun:40020/api/deploy/ibIXdLmbo8-NNQJQ9GID5 \
+          curl -X POST https://service.yes365.fun:40020/api/deploy/67Z_yzpWfasLWND4_rp3L \
             -H "x-github-event: push" \
             -H "Content-Type: application/json" \
             -d "{\"ref\": \"${{ github.ref }}\"}"
