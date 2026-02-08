@@ -18,8 +18,10 @@ make -j6 > /dev/null
 sudo make install > /dev/null
 cd ..
 
-git clone https://github.com/ftk/quickjspp --depth=1
+git clone --no-checkout https://github.com/ftk/quickjspp.git
 cd quickjspp
+git fetch origin 0c00c48895919fc02da3f191a2da06addeb07f09
+git checkout 0c00c48895919fc02da3f191a2da06addeb07f09
 cmake -DCMAKE_BUILD_TYPE=Release .
 make quickjs -j6 > /dev/null
 sudo install -d /usr/local/lib/quickjs/
