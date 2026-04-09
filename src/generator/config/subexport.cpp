@@ -1791,8 +1791,11 @@ void proxyToQuanX(std::vector<Proxy> &nodes, INIReader &ini, std::vector<Ruleset
                     proxyStr += ", obfs-host=" + host + ", obfs-uri=" + path;
                 } else if (tlssecure)
                     proxyStr += ", obfs=over-tls, obfs-host=" + host;
-                if (tlssecure && !scv.is_undef())
+                if (tlssecure && !scv.is_undef()) {
                     proxyStr += ", tls-verification=" + scv.reverse().get_str();
+                } else {
+                    proxyStr += ", tls-verification=false";
+                }
                 if (!x.PublicKey.empty())
                     proxyStr += ", reality-base64-pubkey=" + x.PublicKey;
                 if (!x.ShortId.empty())
@@ -1882,8 +1885,11 @@ void proxyToQuanX(std::vector<Proxy> &nodes, INIReader &ini, std::vector<Ruleset
             default:
                 continue;
         }
-        if (!tfo.is_undef())
+        if (!tfo.is_undef()) {
             proxyStr += ", fast-open=" + tfo.get_str();
+        } else {
+            proxyStr += ", fast-open=false";
+        }
         if (!udp.is_undef())
             proxyStr += ", udp-relay=" + udp.get_str();
         if (tlssecure && !scv.is_undef() &&
