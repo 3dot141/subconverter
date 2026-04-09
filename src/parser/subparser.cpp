@@ -2001,6 +2001,7 @@ bool explodeSurge(std::string surge, std::vector<Proxy> &nodes) {
         std::string remarks, server, port, method, username, password, sni; //common
         std::string plugin, pluginopts, pluginopts_mode, pluginopts_host, mod_url, mod_md5; //ss
         std::string id, net, tls, host, edge, path, fp; //v2
+        std::string pbk, sid, flow; //vless
         std::string protocol, protoparam; //ssr
         std::string section, ip, ipv6, private_key, public_key, mtu, test_url, client_id, peer, keepalive; //wireguard
         string_array dns_servers;
@@ -2601,6 +2602,23 @@ bool explodeSurge(std::string surge, std::vector<Proxy> &nodes) {
                                 case "over-tls"_hash:
                                     tls = itemVal == "true" ? "tls" : "";
                                     break;
+                                case "tls-host"_hash:
+                                    host = itemVal;
+                                    sni = itemVal;
+                                    break;
+                                case "tls-verification"_hash:
+                                    scv = itemVal == "false";
+                                    break;
+                                case "reality-base64-pubkey"_hash:
+                                    pbk = itemVal;
+                                    tls = "reality";
+                                    break;
+                                case "reality-hex-shortid"_hash:
+                                    sid = itemVal;
+                                    break;
+                                case "vless-flow"_hash:
+                                    flow = itemVal;
+                                    break;
                                 case "udp-relay"_hash:
                                     udp = itemVal;
                                     break;
@@ -2612,6 +2630,7 @@ bool explodeSurge(std::string surge, std::vector<Proxy> &nodes) {
                                     break;
                                 case "aead"_hash:
                                     aead = itemVal == "true" ? "0" : "1";
+                                    break;
                                 default:
                                     continue;
                             }
@@ -2619,8 +2638,8 @@ bool explodeSurge(std::string surge, std::vector<Proxy> &nodes) {
                         if (remarks.empty())
                             remarks = server + ":" + port;
                         vlessConstruct(node, XRAY_DEFAULT_GROUP, remarks, server, port, "", id, aead, net, method,
-                                       "chrome", "", path, host, "",
-                                       tls, "", "", fp, sni, std::vector<std::string>{}, "","", udp, tfo, scv, tls13);
+                                       flow, "", path, host, "",
+                                       tls, pbk, sid, fp, sni, std::vector<std::string>{}, "", "", udp, tfo, scv, tls13);
                         break;
                     case "trojan"_hash: //quantumult x style trojan link
                         server = trim(configs[0].substr(0, configs[0].rfind(':')));

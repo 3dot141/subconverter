@@ -1777,10 +1777,7 @@ void proxyToQuanX(std::vector<Proxy> &nodes, INIReader &ini, std::vector<Ruleset
                     proxyStr += ", obfs=over-tls, obfs-host=" + host;
                 break;
             case ProxyType::VLESS:
-                if (method == "auto")
-                    method = "none";
-                else
-                    method = "none";
+                method = "none";
                 proxyStr = "vless = " + hostname + ":" + port + ", method=" + method + ", password=" + id;
                 if (x.AlterId != 0)
                     proxyStr += ", aead=false";
@@ -1794,6 +1791,14 @@ void proxyToQuanX(std::vector<Proxy> &nodes, INIReader &ini, std::vector<Ruleset
                     proxyStr += ", obfs-host=" + host + ", obfs-uri=" + path;
                 } else if (tlssecure)
                     proxyStr += ", obfs=over-tls, obfs-host=" + host;
+                if (tlssecure && !scv.is_undef())
+                    proxyStr += ", tls-verification=" + scv.reverse().get_str();
+                if (!x.PublicKey.empty())
+                    proxyStr += ", reality-base64-pubkey=" + x.PublicKey;
+                if (!x.ShortId.empty())
+                    proxyStr += ", reality-hex-shortid=" + x.ShortId;
+                if (!x.Flow.empty())
+                    proxyStr += ", vless-flow=" + x.Flow;
                 break;
             case ProxyType::Shadowsocks:
                 proxyStr =
