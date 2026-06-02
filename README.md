@@ -124,6 +124,43 @@ Finally subscribe this link in Clash and you are done!
 
 Please refer to [中文文档](https://github.com/asdlokj1qpi23/subconverter/blob/master/README-cn.md#%E8%BF%9B%E9%98%B6%E7%94%A8%E6%B3%95).
 
+## Chain Proxy Override
+
+Define named relay chains (front airport group → your own VPS landing) **once** in an external
+config, and subconverter derives working chained-proxy config for both Clash and Quantumult X:
+
+- **Clash** → a `relay` proxy-group `[front, landing]` (plus a `<name>-front` helper group when
+  `front` is a regex).
+- **Quantumult X** (no native relay) → a front policy group, a backhaul rule
+  (`ip-cidr, <landing-ip>/32, <front>` when the landing host is an IP, otherwise `host, <domain>, <front>`),
+  and chain-targeted filter rules rewritten to `..., <landing>, via-interface=%TUN%`.
+
+Add a `chain` key to the `[custom]` section of your external config (`?config=` query). Syntax:
+
+```ini
+; chain = name ` front ` landing [ ` front_type ]
+;   front:      "[]GroupName" reference, OR a node-remark regex (auto-creates "<name>-front")
+;   landing:    node tag/regex; MUST resolve to exactly one node (your VPS)
+;   front_type: optional ("select" default | "url-test"); used only when front is a regex
+chain=JP-Chain`[]🇯🇵 节点`my-jp-vps
+chain=US-Chain`(美国|US)`my-us-vps`url-test
+```
+
+Route domains to a chain with the normal `ruleset` mechanism (policy name == chain name):
+
+```ini
+ruleset=JP-Chain,[]DOMAIN-SUFFIX,google.com
+```
+
+TOML (`[[chain]]`) and YAML (`chain:`) external configs accept the same fields
+(`name`, `front`, `landing`, `front_type`).
+
+The landing node must be in the node pool: either present in the subscription, or appended as a
+node share-link in the `url=` query (e.g. `url=<sub>|ss://...#my-jp-vps`). A chain whose `landing`
+does not resolve to exactly one node is skipped with a warning. See
+[`base/config/example_external_config_chain.ini`](./base/config/example_external_config_chain.ini)
+and the design spec under `docs/superpowers/specs/`.
+
 ## Auto Upload
 
 > Upload Gist automatically
