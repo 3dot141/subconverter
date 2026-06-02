@@ -6,6 +6,7 @@
 #include "config/crontask.h"
 #include "config/regmatch.h"
 #include "config/proxygroup.h"
+#include "config/chain.h"
 #include "config/ruleset.h"
 #include "generator/config/ruleconvert.h"
 #include "generator/template/templates.h"
@@ -76,6 +77,7 @@ struct Settings
 struct ExternalConfig
 {
     ProxyGroupConfigs custom_proxy_group;
+    ChainConfigs chains;
     RulesetConfigs surge_ruleset;
     std::string clash_rule_base;
     std::string surge_rule_base;

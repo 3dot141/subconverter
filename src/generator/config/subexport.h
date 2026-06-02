@@ -8,6 +8,7 @@
 #endif // NO_JS_RUNTIME
 
 #include "config/proxygroup.h"
+#include "config/chain.h"
 #include "config/regmatch.h"
 #include "parser/config/proxy.h"
 #include "utils/ini_reader/ini_reader.h"
@@ -42,6 +43,7 @@ struct extra_settings
     std::string clash_proxies_style = "flow";
     std::string clash_proxy_groups_style = "flow";
     bool authorized = false;
+    ChainConfigs chains;
 
     extra_settings() = default;
     extra_settings(const extra_settings&) = delete;
