@@ -79,8 +79,8 @@ void appendClashChains(const std::vector<ResolvedChain> &chains, ProxyGroupConfi
         ProxyGroupConfig relay;
         relay.Name = c.name;
         relay.Type = ProxyGroupType::Relay;
-        relay.Proxies.push_back(c.frontGroup);
-        relay.Proxies.push_back("[]" + c.landingTag); // exact node by literal
+        relay.Proxies.push_back("[]" + c.frontGroup);  // group reference (front hop)
+        relay.Proxies.push_back("[]" + c.landingTag);  // exact node by literal (landing)
         groups.push_back(relay);
     }
 }
@@ -113,8 +113,10 @@ std::vector<std::string> quanXBackhaulRules(const std::vector<ResolvedChain> &ch
         if(seen.count(key))
             continue;
         seen.insert(key);
-        if(c.landingIsIP)
+        if(isIPv4(c.landingServer))
             out.push_back("ip-cidr, " + c.landingServer + "/32, " + c.frontGroup);
+        else if(isIPv6(c.landingServer))
+            out.push_back("ip6-cidr, " + c.landingServer + "/128, " + c.frontGroup);
         else
             out.push_back("host, " + c.landingServer + ", " + c.frontGroup);
     }
@@ -163,6 +165,10 @@ void rewriteQuanXChainRules(INIReader &ini, const std::vector<ResolvedChain> &ch
     }
 
     ini.erase_section();
+    // backhaul rules first (first-match priority: connections to the landing must hit the front),
+    // then the (rewritten) ruleset rules.
+    for(const std::string &r : quanXBackhaulRules(chains))
+        ini.set("{NONAME}", r);
     for(const std::string &l : rebuilt)
         ini.set("{NONAME}", l);
 }
