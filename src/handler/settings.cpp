@@ -1097,6 +1097,22 @@ int loadExternalYAML(YAML::Node &node, ExternalConfig &ext)
         ext.custom_proxy_group = INIBinding::from<ProxyGroupConfig>::from_ini(vArray);
     }
 
+    if(section["chain"].IsDefined() && section["chain"].size())
+    {
+        for(size_t i = 0; i < section["chain"].size(); i++)
+        {
+            ChainConfig conf;
+            section["chain"][i]["name"] >> conf.Name;
+            section["chain"][i]["front"] >> conf.Front;
+            section["chain"][i]["landing"] >> conf.Landing;
+            if(section["chain"][i]["front_type"].IsDefined())
+                section["chain"][i]["front_type"] >> conf.FrontType;
+            else
+                conf.FrontType = "select";
+            ext.chains.emplace_back(std::move(conf));
+        }
+    }
+
     const char *ruleset_name = section["rulesets"].IsDefined() ? "rulesets" : "surge_ruleset";
     if(section[ruleset_name].size())
     {
@@ -1177,6 +1193,10 @@ int loadExternalTOML(toml::value &root, ExternalConfig &ext)
     importItems(groups, "custom_groups", false);
     ext.custom_proxy_group = toml::get<ProxyGroupConfigs>(toml::value(groups));
 
+    auto chains = toml::find_or<std::vector<toml::value>>(root, "chain", {});
+    importItems(chains, "chain", false);
+    ext.chains = toml::get<ChainConfigs>(toml::value(chains));
+
     auto rulesets = toml::find_or<std::vector<toml::value>>(root, "rulesets", {});
     importItems(rulesets, "rulesets", false);
     if(global.maxAllowedRulesets && rulesets.size() > global.maxAllowedRulesets)
@@ -1238,6 +1258,13 @@ int loadExternalConfig(std::string &path, ExternalConfig &ext)
         ini.get_all("custom_proxy_group", vArray);
         importItems(vArray, global.APIMode);
         ext.custom_proxy_group = INIBinding::from<ProxyGroupConfig>::from_ini(vArray);
+    }
+    if(ini.item_prefix_exist("chain"))
+    {
+        string_array vArray;
+        ini.get_all("chain", vArray);
+        importItems(vArray, global.APIMode);
+        ext.chains = INIBinding::from<ChainConfig>::from_ini(vArray);
     }
     std::string ruleset_name = ini.item_prefix_exist("ruleset") ? "ruleset" : "surge_ruleset";
     if(ini.item_prefix_exist(ruleset_name))

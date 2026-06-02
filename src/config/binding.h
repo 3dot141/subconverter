@@ -6,6 +6,7 @@
 #include "handler/settings.h"
 #include "crontask.h"
 #include "proxygroup.h"
+#include "chain.h"
 #include "regmatch.h"
 #include "ruleset.h"
 
@@ -84,6 +85,20 @@ namespace toml
                 throw serialization_error(format_error("Proxy Group must contains at least one of proxy match rule or provider!", v.location(), "here"), v.location());
             if(v.contains("disable-udp"))
                 conf.DisableUdp = find_or(v, "disable-udp", conf.DisableUdp.get());
+            return conf;
+        }
+    };
+
+    template<>
+    struct from<ChainConfig>
+    {
+        static ChainConfig from_toml(const value& v)
+        {
+            ChainConfig conf;
+            conf.Name = find<String>(v, "name");
+            conf.Front = find<String>(v, "front");
+            conf.Landing = find<String>(v, "landing");
+            conf.FrontType = find_or<String>(v, "front_type", "select");
             return conf;
         }
     };
@@ -259,6 +274,29 @@ namespace INIBinding
                     else
                         conf.Proxies.emplace_back(std::move(vArray[i]));
                 }
+                confs.emplace_back(std::move(conf));
+            }
+            return confs;
+        }
+    };
+
+    template<>
+    struct from<ChainConfig>
+    {
+        static ChainConfigs from_ini(const StrArray &arr)
+        {
+            // format: name`front`landing[`front_type]
+            ChainConfigs confs;
+            for(const String &x : arr)
+            {
+                StrArray vArray = split(x, "`");
+                if(vArray.size() < 3)
+                    continue;
+                ChainConfig conf;
+                conf.Name = vArray[0];
+                conf.Front = vArray[1];
+                conf.Landing = vArray[2];
+                conf.FrontType = vArray.size() > 3 ? vArray[3] : "select";
                 confs.emplace_back(std::move(conf));
             }
             return confs;
