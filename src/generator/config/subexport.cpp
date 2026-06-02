@@ -22,6 +22,7 @@
 #include "utils/yamlcpp_extra.h"
 #include "nodemanip.h"
 #include "ruleconvert.h"
+#include "chaingen.h"
 
 extern string_array ss_ciphers, ssr_ciphers;
 
@@ -729,8 +730,10 @@ proxyToClash(std::vector<Proxy> &nodes, YAML::Node &yamlnode, const ProxyGroupCo
     else
         yamlnode["Proxy"] = proxies;
 
+    ProxyGroupConfigs merged_groups = extra_proxy_group;
+    appendClashChains(resolveChains(ext.chains, nodelist), merged_groups);
 
-    for (const ProxyGroupConfig &x: extra_proxy_group) {
+    for (const ProxyGroupConfig &x: merged_groups) {
         YAML::Node singlegroup;
         string_array filtered_nodelist;
 
@@ -1932,6 +1935,9 @@ void proxyToQuanX(std::vector<Proxy> &nodes, INIReader &ini, std::vector<Ruleset
                 for (const auto &proxy: x.Proxies)
                     filtered_nodelist.emplace_back(replaceAllDistinct(proxy, "=", ":"));
                 break;
+            case ProxyGroupType::Relay:
+                type = "static"; // QuanX has no relay group; degrade to a static list in chain order
+                break;
             default:
                 continue;
         }
@@ -1975,8 +1981,21 @@ void proxyToQuanX(std::vector<Proxy> &nodes, INIReader &ini, std::vector<Ruleset
         ini.set("{NONAME}", singlegroup);
     }
 
+    // chain proxy: emit generated front policy groups (current section is still "policy")
+    auto resolved_chains = resolveChains(ext.chains, nodelist);
+    for (const std::string &p: quanXFrontPolicies(resolved_chains))
+        ini.set("{NONAME}", p);
+
     if (ext.enable_rule_generator)
         rulesetToSurge(ini, ruleset_content_array, -1, ext.overwrite_original_rules, ext.managed_config_prefix);
+
+    // chain proxy: add backhaul rules for landing nodes, then rewrite chain-targeted rules with via-interface=%TUN%
+    if (ext.enable_rule_generator && !resolved_chains.empty()) {
+        ini.set_current_section("filter_local");
+        for (const std::string &r: quanXBackhaulRules(resolved_chains))
+            ini.set("{NONAME}", r);
+        rewriteQuanXChainRules(ini, resolved_chains);
+    }
 }
 
 std::string proxyToSSD(std::vector<Proxy> &nodes, std::string &group, std::string &userinfo, extra_settings &ext) {

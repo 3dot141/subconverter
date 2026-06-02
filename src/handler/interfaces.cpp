@@ -538,6 +538,8 @@ std::string subconverter(RESPONSE_CALLBACK_ARGS) {
                         lCustomRulesets = extconf.surge_ruleset;
                     if (!extconf.custom_proxy_group.empty())
                         lCustomProxyGroups = extconf.custom_proxy_group;
+                    if (!extconf.chains.empty())
+                        ext.chains = extconf.chains;
                     ext.enable_rule_generator = extconf.enable_rule_generator;
                     ext.overwrite_original_rules = extconf.overwrite_original_rules;
                 }

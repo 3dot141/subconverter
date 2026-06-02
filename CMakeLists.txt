@@ -51,6 +51,7 @@ ADD_EXECUTABLE(${BUILD_TARGET_NAME}
     src/generator/config/nodemanip.cpp
     src/generator/config/ruleconvert.cpp
     src/generator/config/subexport.cpp
+    src/generator/config/chaingen.cpp
     src/generator/template/templates.cpp
     src/handler/interfaces.cpp
     src/handler/multithread.cpp
@@ -135,6 +136,7 @@ ELSE() #BUILD_STATIC_LIBRARY
 ADD_LIBRARY(${BUILD_TARGET_NAME} STATIC
     src/generator/config/ruleconvert.cpp
     src/generator/config/subexport.cpp
+    src/generator/config/chaingen.cpp
     src/generator/template/templates.cpp
     src/lib/wrapper.cpp
     src/parser/subparser.cpp
