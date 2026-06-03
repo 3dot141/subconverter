@@ -16,17 +16,25 @@ struct ResolvedChain
     std::string frontGroup;          // referenced group, or generated "<name>-front"
     std::string frontFilter;         // node regex when !frontIsRef
     std::string frontType;           // helper group type ("select"/"url-test")
-    std::string landingTag;          // resolved unique landing node remark
-    std::string landingServer;       // landing node hostname (IP or domain)
-    bool        landingIsIP = false;
+    bool        landingIsGroupRef = false;   // landing was written as "[]Group"
+    std::string landingGroup;                // referenced group name (QuanX policy slot)
+    struct LandingNode { std::string tag; std::string server; bool isIP; };
+    std::vector<LandingNode> landingNodes;   // resolved landing node set (size==1 for single-node)
     bool        valid = false;
 };
 
-// Resolve each chain against the node pool. Invalid chains (landing not unique) get valid=false and a warning.
-std::vector<ResolvedChain> resolveChains(const ChainConfigs &chains, std::vector<Proxy> &nodes);
+// Resolve each chain against the node pool. Invalid chains (landing not unique / group missing) get valid=false + warning.
+// proxyGroups is used to look up "[]Group" landing references against custom_proxy_group definitions.
+std::vector<ResolvedChain> resolveChains(const ChainConfigs &chains, std::vector<Proxy> &nodes,
+                                         const ProxyGroupConfigs &proxyGroups);
 
-// Clash: append a "<name>-front" helper group (when front is a regex) and a relay "<name>" group per valid chain.
-void appendClashChains(const std::vector<ResolvedChain> &chains, ProxyGroupConfigs &groups);
+// Clash inject (called BEFORE the node loop): set UnderlyingProxy on landing nodes; returns resolved chains via outResolved.
+void injectClashChains(const ChainConfigs &chains, std::vector<Proxy> &nodes,
+                       const ProxyGroupConfigs &proxyGroups,
+                       std::vector<ResolvedChain> &outResolved);
+
+// Clash (called AFTER the node loop): append "<name>-front" helper groups; no longer generates a relay group.
+void appendClashFrontGroups(const std::vector<ResolvedChain> &chains, ProxyGroupConfigs &groups);
 
 // QuanX: "static=<name>-front, server-tag-regex=<filter>" lines for chains whose front is a regex.
 std::vector<std::string> quanXFrontPolicies(const std::vector<ResolvedChain> &chains);

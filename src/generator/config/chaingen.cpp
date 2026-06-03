@@ -7,7 +7,8 @@
 #include "utils/logger.h"
 #include "utils/string.h"
 
-std::vector<ResolvedChain> resolveChains(const ChainConfigs &chains, std::vector<Proxy> &nodes)
+std::vector<ResolvedChain> resolveChains(const ChainConfigs &chains, std::vector<Proxy> &nodes,
+                                         const ProxyGroupConfigs &proxyGroups)
 {
     std::vector<ResolvedChain> out;
     for(const ChainConfig &c : chains)
@@ -29,60 +30,134 @@ std::vector<ResolvedChain> resolveChains(const ChainConfigs &chains, std::vector
             rc.frontGroup = c.Name + "-front";
         }
 
-        // landing: resolve to exactly one node by exact remark, else by regex
-        std::vector<Proxy*> matched;
-        for(Proxy &n : nodes)
-            if(n.Remark == c.Landing)
-                matched.push_back(&n);
-        if(matched.empty())
-            for(Proxy &n : nodes)
-                if(regFind(n.Remark, c.Landing))
-                    matched.push_back(&n);
-
-        if(matched.size() != 1)
+        // landing: "[]Group" reference (a set of VPS) vs a single node (legacy)
+        if(startsWith(c.Landing, "[]"))
         {
-            writeLog(0, "Chain '" + c.Name + "' landing '" + c.Landing + "' resolved to "
-                        + std::to_string(matched.size()) + " nodes; skipping.", LOG_LEVEL_WARNING);
+            rc.landingIsGroupRef = true;
+            rc.landingGroup = c.Landing.substr(2);
+
+            // locate the group in custom_proxy_group
+            const ProxyGroupConfig *grp = nullptr;
+            for(const ProxyGroupConfig &g : proxyGroups)
+                if(g.Name == rc.landingGroup)
+                {
+                    grp = &g;
+                    break;
+                }
+            if(grp == nullptr)
+            {
+                writeLog(0, "Chain '" + c.Name + "' landing group '" + rc.landingGroup + "' not found; skipping.", LOG_LEVEL_WARNING);
+                rc.valid = false;
+                out.emplace_back(std::move(rc));
+                continue;
+            }
+
+            // only support "plain remark-regex filtered" groups: reject groups with []/script:/!! entries
+            bool bad = false;
+            for(const std::string &rule : grp->Proxies)
+                if(startsWith(rule, "[]") || startsWith(rule, "script:") || startsWith(rule, "!!"))
+                {
+                    bad = true;
+                    break;
+                }
+            if(bad)
+            {
+                writeLog(0, "Chain '" + c.Name + "' landing group '" + rc.landingGroup + "' not regex-filtered; skipping.", LOG_LEVEL_WARNING);
+                rc.valid = false;
+                out.emplace_back(std::move(rc));
+                continue;
+            }
+
+            // union of the group's regex rules against the node pool
+            for(Proxy &n : nodes)
+                for(const std::string &rule : grp->Proxies)
+                    if(regFind(n.Remark, rule))
+                    {
+                        rc.landingNodes.push_back({n.Remark, n.Hostname, isIPv4(n.Hostname) || isIPv6(n.Hostname)});
+                        break;
+                    }
+        }
+        else
+        {
+            // single-node landing (legacy): exact remark first, else regex, require uniqueness
+            std::vector<Proxy*> matched;
+            for(Proxy &n : nodes)
+                if(n.Remark == c.Landing)
+                    matched.push_back(&n);
+            if(matched.empty())
+                for(Proxy &n : nodes)
+                    if(regFind(n.Remark, c.Landing))
+                        matched.push_back(&n);
+
+            if(matched.size() != 1)
+            {
+                writeLog(0, "Chain '" + c.Name + "' landing '" + c.Landing + "' resolved to "
+                            + std::to_string(matched.size()) + " nodes; skipping.", LOG_LEVEL_WARNING);
+                rc.valid = false;
+                out.emplace_back(std::move(rc));
+                continue;
+            }
+            rc.landingNodes.push_back({matched[0]->Remark, matched[0]->Hostname,
+                                       isIPv4(matched[0]->Hostname) || isIPv6(matched[0]->Hostname)});
+        }
+
+        if(rc.landingNodes.empty())
+        {
+            writeLog(0, "Chain '" + c.Name + "' landing has no matching node; skipping.", LOG_LEVEL_WARNING);
             rc.valid = false;
             out.emplace_back(std::move(rc));
             continue;
         }
 
-        rc.landingTag = matched[0]->Remark;
-        rc.landingServer = matched[0]->Hostname;
-        rc.landingIsIP = isIPv4(rc.landingServer) || isIPv6(rc.landingServer);
         rc.valid = true;
         out.emplace_back(std::move(rc));
     }
     return out;
 }
 
-void appendClashChains(const std::vector<ResolvedChain> &chains, ProxyGroupConfigs &groups)
+void injectClashChains(const ChainConfigs &chains, std::vector<Proxy> &nodes,
+                       const ProxyGroupConfigs &proxyGroups,
+                       std::vector<ResolvedChain> &outResolved)
 {
-    for(const ResolvedChain &c : chains)
+    outResolved = resolveChains(chains, nodes, proxyGroups);
+    for(const ResolvedChain &c : outResolved)
     {
         if(!c.valid)
             continue;
-        if(!c.frontIsRef)
+        for(const auto &ln : c.landingNodes)
         {
-            ProxyGroupConfig front;
-            front.Name = c.frontGroup;
-            front.Type = c.frontType == "url-test" ? ProxyGroupType::URLTest : ProxyGroupType::Select;
-            if(front.Type == ProxyGroupType::URLTest)
-            {
-                front.Url = "http://www.gstatic.com/generate_204";
-                front.Interval = 300;
-            }
-            front.Proxies.push_back(c.frontFilter);
-            groups.push_back(front);
+            bool found = false;
+            for(Proxy &n : nodes)
+                if(n.Remark == ln.tag)
+                {
+                    n.UnderlyingProxy = c.frontGroup;  // node loop reads nodes -> emits dialer-proxy
+                    found = true;
+                    break;
+                }
+            if(!found)
+                writeLog(0, "Chain '" + c.name + "' landing node '" + ln.tag + "' not found in node list; skipping injection.", LOG_LEVEL_WARNING);
         }
-        ProxyGroupConfig relay;
-        relay.Name = c.name;
-        relay.Type = ProxyGroupType::Relay;
-        relay.Proxies.push_back("[]" + c.frontGroup);  // group reference (front hop)
-        relay.Proxies.push_back("[]" + c.landingTag);  // exact node by literal (landing)
-        groups.push_back(relay);
     }
+}
+
+void appendClashFrontGroups(const std::vector<ResolvedChain> &chains, ProxyGroupConfigs &groups)
+{
+    for(const ResolvedChain &c : chains)
+    {
+        if(!c.valid || c.frontIsRef)
+            continue;
+        ProxyGroupConfig front;
+        front.Name = c.frontGroup;
+        front.Type = c.frontType == "url-test" ? ProxyGroupType::URLTest : ProxyGroupType::Select;
+        if(front.Type == ProxyGroupType::URLTest)
+        {
+            front.Url = "http://www.gstatic.com/generate_204";
+            front.Interval = 300;
+        }
+        front.Proxies.push_back(c.frontFilter);
+        groups.push_back(front);
+    }
+    // relay group retired (Clash now uses per-node dialer-proxy)
 }
 
 std::vector<std::string> quanXFrontPolicies(const std::vector<ResolvedChain> &chains)
@@ -109,16 +184,19 @@ std::vector<std::string> quanXBackhaulRules(const std::vector<ResolvedChain> &ch
     {
         if(!c.valid)
             continue;
-        std::string key = c.landingServer + "|" + c.frontGroup;
-        if(seen.count(key))
-            continue;
-        seen.insert(key);
-        if(isIPv4(c.landingServer))
-            out.push_back("ip-cidr, " + c.landingServer + "/32, " + c.frontGroup);
-        else if(isIPv6(c.landingServer))
-            out.push_back("ip6-cidr, " + c.landingServer + "/128, " + c.frontGroup);
-        else
-            out.push_back("host, " + c.landingServer + ", " + c.frontGroup);
+        for(const auto &ln : c.landingNodes)
+        {
+            std::string key = ln.server + "|" + c.frontGroup;
+            if(seen.count(key))
+                continue;
+            seen.insert(key);
+            if(isIPv4(ln.server))
+                out.push_back("ip-cidr, " + ln.server + "/32, " + c.frontGroup);
+            else if(isIPv6(ln.server))
+                out.push_back("ip6-cidr, " + ln.server + "/128, " + c.frontGroup);
+            else
+                out.push_back("host, " + ln.server + ", " + c.frontGroup);
+        }
     }
     return out;
 }
@@ -135,7 +213,7 @@ void rewriteQuanXChainRules(INIReader &ini, const std::vector<ResolvedChain> &ch
     auto landingOf = [&](const std::string &name) -> std::string {
         for(const ResolvedChain &c : chains)
             if(c.valid && c.name == name)
-                return c.landingTag;
+                return c.landingIsGroupRef ? c.landingGroup : c.landingNodes[0].tag;
         return std::string();
     };
 

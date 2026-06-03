@@ -252,6 +252,10 @@ proxyToClash(std::vector<Proxy> &nodes, YAML::Node &yamlnode, const ProxyGroupCo
             break;
     }
 
+    // chain proxy: inject landing nodes' UnderlyingProxy BEFORE the node loop so the loop emits dialer-proxy
+    std::vector<ResolvedChain> resolvedChains;
+    injectClashChains(ext.chains, nodes, extra_proxy_group, resolvedChains);
+
     for (Proxy &x: nodes) {
         YAML::Node singleproxy;
 
@@ -706,6 +710,8 @@ proxyToClash(std::vector<Proxy> &nodes, YAML::Node &yamlnode, const ProxyGroupCo
         // sees in https://dreamacro.github.io/clash/configuration/outbound.html#snell
         if (udp && x.Type != ProxyType::Snell && x.Type != ProxyType::TUIC)
             singleproxy["udp"] = true;
+        if (!x.UnderlyingProxy.empty())
+            singleproxy["dialer-proxy"] = x.UnderlyingProxy;  // chain landing: dial through the front group
         if (proxy_block)
             singleproxy.SetStyle(YAML::EmitterStyle::Block);
         else
@@ -731,7 +737,7 @@ proxyToClash(std::vector<Proxy> &nodes, YAML::Node &yamlnode, const ProxyGroupCo
         yamlnode["Proxy"] = proxies;
 
     ProxyGroupConfigs merged_groups = extra_proxy_group;
-    appendClashChains(resolveChains(ext.chains, nodelist), merged_groups);
+    appendClashFrontGroups(resolvedChains, merged_groups);
 
     for (const ProxyGroupConfig &x: merged_groups) {
         YAML::Node singlegroup;
@@ -1997,7 +2003,7 @@ void proxyToQuanX(std::vector<Proxy> &nodes, INIReader &ini, std::vector<Ruleset
     }
 
     // chain proxy: emit generated front policy groups (current section is still "policy")
-    auto resolved_chains = resolveChains(ext.chains, nodelist);
+    auto resolved_chains = resolveChains(ext.chains, nodelist, extra_proxy_group);
     for (const std::string &p: quanXFrontPolicies(resolved_chains))
         ini.set("{NONAME}", p);
 
