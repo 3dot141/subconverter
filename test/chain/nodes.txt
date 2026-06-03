@@ -1,2 +1,5 @@
 ss://YWVzLTI1Ni1nY206cGFzcw==@198.51.100.7:8388#日本01
 ss://YWVzLTI1Ni1nY206cGFzcw==@203.0.113.9:8388#my-jp-vps
+anytls://8b7b01267b6440aa@198.51.100.50:4048?sni=cdn.example.com#anytls-hk-01
+ss://YWVzLTI1Ni1nY206cGFzcw==@192.0.2.11:8388#LD-US-01
+ss://YWVzLTI1Ni1nY206cGFzcw==@192.0.2.12:8388#LD-US-02
