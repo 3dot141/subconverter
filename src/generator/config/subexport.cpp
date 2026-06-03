@@ -1885,6 +1885,21 @@ void proxyToQuanX(std::vector<Proxy> &nodes, INIReader &ini, std::vector<Ruleset
                     }
                 }
                 break;
+            case ProxyType::AnyTLS:
+                proxyStr = "anytls = " + hostname + ":" + port + ", password=" + password;
+                proxyStr += ", over-tls=true";
+                if (!x.SNI.empty())
+                    proxyStr += ", tls-host=" + x.SNI;
+                if (!x.PublicKey.empty())
+                    proxyStr += ", reality-base64-pubkey=" + x.PublicKey;
+                if (!x.ShortId.empty())
+                    proxyStr += ", reality-hex-shortid=" + x.ShortId;
+                if (!scv.is_undef()) {
+                    proxyStr += ", tls-verification=" + scv.reverse().get_str();
+                } else {
+                    proxyStr += ", tls-verification=false";
+                }
+                break;
             default:
                 continue;
         }
@@ -1896,7 +1911,7 @@ void proxyToQuanX(std::vector<Proxy> &nodes, INIReader &ini, std::vector<Ruleset
         if (!udp.is_undef())
             proxyStr += ", udp-relay=" + udp.get_str();
         if (tlssecure && !scv.is_undef() &&
-            (x.Type != ProxyType::Shadowsocks && x.Type != ProxyType::ShadowsocksR && x.Type != ProxyType::VLESS))
+            (x.Type != ProxyType::Shadowsocks && x.Type != ProxyType::ShadowsocksR && x.Type != ProxyType::VLESS && x.Type != ProxyType::AnyTLS))
             proxyStr += ", tls-verification=" + scv.reverse().get_str();
         proxyStr += ", tag=" + x.Remark;
 
