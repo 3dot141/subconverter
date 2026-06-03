@@ -3,7 +3,7 @@ type: design-doc
 topic: QuanX 输出 anytls 节点 + chain 落地支持引用 policy 组(一组 VPS)+ 分组配置收尾
 date: 260603
 author: 3dot141
-status: draft
+status: implemented
 last_updated: 260603
 ---
 
