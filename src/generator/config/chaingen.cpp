@@ -22,6 +22,17 @@ std::vector<ResolvedChain> resolveChains(const ChainConfigs &chains, std::vector
         {
             rc.frontIsRef = true;
             rc.frontGroup = c.Front.substr(2);
+
+            // existence hint only: front may reference a base-template group not in proxyGroups; warn, don't invalidate
+            bool frontFound = false;
+            for(const ProxyGroupConfig &g : proxyGroups)
+                if(g.Name == rc.frontGroup)
+                {
+                    frontFound = true;
+                    break;
+                }
+            if(!frontFound)
+                writeLog(0, "Chain '" + c.Name + "' front group '" + rc.frontGroup + "' not found in proxy groups; dialer-proxy may reference a base-template group.", LOG_LEVEL_WARNING);
         }
         else
         {
@@ -73,7 +84,7 @@ std::vector<ResolvedChain> resolveChains(const ChainConfigs &chains, std::vector
                 for(const std::string &rule : grp->Proxies)
                     if(regFind(n.Remark, rule))
                     {
-                        rc.landingNodes.push_back({n.Remark, n.Hostname, isIPv4(n.Hostname) || isIPv6(n.Hostname)});
+                        rc.landingNodes.push_back({n.Remark, n.Hostname});
                         break;
                     }
         }
@@ -97,8 +108,7 @@ std::vector<ResolvedChain> resolveChains(const ChainConfigs &chains, std::vector
                 out.emplace_back(std::move(rc));
                 continue;
             }
-            rc.landingNodes.push_back({matched[0]->Remark, matched[0]->Hostname,
-                                       isIPv4(matched[0]->Hostname) || isIPv6(matched[0]->Hostname)});
+            rc.landingNodes.push_back({matched[0]->Remark, matched[0]->Hostname});
         }
 
         if(rc.landingNodes.empty())
@@ -130,6 +140,8 @@ void injectClashChains(const ChainConfigs &chains, std::vector<Proxy> &nodes,
             for(Proxy &n : nodes)
                 if(n.Remark == ln.tag)
                 {
+                    if(!n.UnderlyingProxy.empty())
+                        writeLog(0, "Node '" + n.Remark + "' already used as landing by another chain; overwriting dialer-proxy with '" + c.frontGroup + "'.", LOG_LEVEL_WARNING);
                     n.UnderlyingProxy = c.frontGroup;  // node loop reads nodes -> emits dialer-proxy
                     found = true;
                     break;

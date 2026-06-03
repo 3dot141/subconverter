@@ -18,7 +18,7 @@ struct ResolvedChain
     std::string frontType;           // helper group type ("select"/"url-test")
     bool        landingIsGroupRef = false;   // landing was written as "[]Group"
     std::string landingGroup;                // referenced group name (QuanX policy slot)
-    struct LandingNode { std::string tag; std::string server; bool isIP; };
+    struct LandingNode { std::string tag; std::string server; };
     std::vector<LandingNode> landingNodes;   // resolved landing node set (size==1 for single-node)
     bool        valid = false;
 };
