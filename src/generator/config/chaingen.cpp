@@ -11,6 +11,8 @@ std::vector<ResolvedChain> resolveChains(const ChainConfigs &chains, std::vector
                                          const ProxyGroupConfigs &proxyGroups)
 {
     std::vector<ResolvedChain> out;
+    writeLog(0, "[chain-debug] resolveChains called with " + std::to_string(chains.size()) + " chain(s), "
+                + std::to_string(nodes.size()) + " node(s), " + std::to_string(proxyGroups.size()) + " group(s)", LOG_LEVEL_INFO);
     for(const ChainConfig &c : chains)
     {
         ResolvedChain rc;
@@ -120,6 +122,9 @@ std::vector<ResolvedChain> resolveChains(const ChainConfigs &chains, std::vector
         }
 
         rc.valid = true;
+        writeLog(0, "[chain-debug] chain '" + rc.name + "' resolved OK: front=" + rc.frontGroup
+                    + " landingNodes=" + std::to_string(rc.landingNodes.size())
+                    + (rc.landingIsGroupRef ? " (group:" + rc.landingGroup + ")" : " (single)"), LOG_LEVEL_INFO);
         out.emplace_back(std::move(rc));
     }
     return out;
@@ -143,6 +148,7 @@ void injectClashChains(const ChainConfigs &chains, std::vector<Proxy> &nodes,
                     if(!n.UnderlyingProxy.empty())
                         writeLog(0, "Node '" + n.Remark + "' already used as landing by another chain; overwriting dialer-proxy with '" + c.frontGroup + "'.", LOG_LEVEL_WARNING);
                     n.UnderlyingProxy = c.frontGroup;  // node loop reads nodes -> emits dialer-proxy
+                    writeLog(0, "[chain-debug] injected dialer-proxy='" + c.frontGroup + "' into node '" + n.Remark + "'", LOG_LEVEL_INFO);
                     found = true;
                     break;
                 }
@@ -202,6 +208,7 @@ std::vector<std::string> quanXBackhaulRules(const std::vector<ResolvedChain> &ch
             if(seen.count(key))
                 continue;
             seen.insert(key);
+            writeLog(0, "[chain-debug] quanX backhaul: server=" + ln.server + " → front=" + c.frontGroup, LOG_LEVEL_INFO);
             if(isIPv4(ln.server))
                 out.push_back("ip-cidr, " + ln.server + "/32, " + c.frontGroup);
             else if(isIPv6(ln.server))

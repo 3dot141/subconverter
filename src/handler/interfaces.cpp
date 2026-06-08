@@ -538,8 +538,12 @@ std::string subconverter(RESPONSE_CALLBACK_ARGS) {
                         lCustomRulesets = extconf.surge_ruleset;
                     if (!extconf.custom_proxy_group.empty())
                         lCustomProxyGroups = extconf.custom_proxy_group;
-                    if (!extconf.chains.empty())
+                    if (!extconf.chains.empty()) {
                         ext.chains = extconf.chains;
+                        writeLog(0, "[chain-debug] loaded " + std::to_string(ext.chains.size()) + " chain(s) from external config", LOG_LEVEL_INFO);
+                    } else {
+                        writeLog(0, "[chain-debug] extconf.chains is EMPTY — no chain= lines parsed from external config", LOG_LEVEL_WARNING);
+                    }
                     ext.enable_rule_generator = extconf.enable_rule_generator;
                     ext.overwrite_original_rules = extconf.overwrite_original_rules;
                 }

@@ -254,6 +254,7 @@ proxyToClash(std::vector<Proxy> &nodes, YAML::Node &yamlnode, const ProxyGroupCo
 
     // chain proxy: inject landing nodes' UnderlyingProxy BEFORE the node loop so the loop emits dialer-proxy
     std::vector<ResolvedChain> resolvedChains;
+    writeLog(0, "[chain-debug] proxyToClash: ext.chains.size()=" + std::to_string(ext.chains.size()), LOG_LEVEL_INFO);
     injectClashChains(ext.chains, nodes, extra_proxy_group, resolvedChains);
 
     for (Proxy &x: nodes) {
@@ -710,8 +711,10 @@ proxyToClash(std::vector<Proxy> &nodes, YAML::Node &yamlnode, const ProxyGroupCo
         // sees in https://dreamacro.github.io/clash/configuration/outbound.html#snell
         if (udp && x.Type != ProxyType::Snell && x.Type != ProxyType::TUIC)
             singleproxy["udp"] = true;
-        if (!x.UnderlyingProxy.empty())
+        if (!x.UnderlyingProxy.empty()) {
             singleproxy["dialer-proxy"] = x.UnderlyingProxy;  // chain landing: dial through the front group
+            writeLog(0, "[chain-debug] emitting dialer-proxy='" + x.UnderlyingProxy + "' for node '" + x.Remark + "'", LOG_LEVEL_INFO);
+        }
         if (proxy_block)
             singleproxy.SetStyle(YAML::EmitterStyle::Block);
         else
@@ -2003,16 +2006,21 @@ void proxyToQuanX(std::vector<Proxy> &nodes, INIReader &ini, std::vector<Ruleset
     }
 
     // chain proxy: emit generated front policy groups (current section is still "policy")
+    writeLog(0, "[chain-debug] proxyToQuanX: ext.chains.size()=" + std::to_string(ext.chains.size()), LOG_LEVEL_INFO);
     auto resolved_chains = resolveChains(ext.chains, nodelist, extra_proxy_group);
-    for (const std::string &p: quanXFrontPolicies(resolved_chains))
+    for (const std::string &p: quanXFrontPolicies(resolved_chains)) {
+        writeLog(0, "[chain-debug] quanX front policy: " + p, LOG_LEVEL_INFO);
         ini.set("{NONAME}", p);
+    }
 
     if (ext.enable_rule_generator)
         rulesetToSurge(ini, ruleset_content_array, -1, ext.overwrite_original_rules, ext.managed_config_prefix);
 
     // chain proxy: prepend landing backhaul rules and rewrite chain-targeted rules with via-interface=%TUN%
-    if (!resolved_chains.empty())
+    if (!resolved_chains.empty()) {
+        writeLog(0, "[chain-debug] quanX rewriting chain rules, resolved_chains=" + std::to_string(resolved_chains.size()), LOG_LEVEL_INFO);
         rewriteQuanXChainRules(ini, resolved_chains);
+    }
 }
 
 std::string proxyToSSD(std::vector<Proxy> &nodes, std::string &group, std::string &userinfo, extra_settings &ext) {
