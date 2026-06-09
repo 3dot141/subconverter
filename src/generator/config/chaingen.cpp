@@ -186,11 +186,6 @@ std::vector<std::string> quanXFrontPolicies(const std::vector<ResolvedChain> &ch
         if(!c.valid)
             continue;
 
-        // chain name policy: "static=<chain-name>, <landing>" so that
-        // force-policy=<chain-name> in filter_remote resolves to a real policy.
-        std::string landing = c.landingIsGroupRef ? c.landingGroup : c.landingNodes[0].tag;
-        out.push_back("static=" + c.name + ", " + landing);
-
         if(c.frontIsRef)
             continue;
         std::string t = c.frontType == "url-test" ? "url-latency-benchmark" : "static";
