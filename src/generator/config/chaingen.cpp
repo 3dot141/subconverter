@@ -204,17 +204,27 @@ std::vector<std::string> quanXBackhaulRules(const std::vector<ResolvedChain> &ch
             continue;
         for(const auto &ln : c.landingNodes)
         {
-            std::string key = ln.server + "|" + c.frontGroup;
+            // strip port if present (Hostname should be bare, but defend against host:port)
+            std::string server = ln.server;
+            auto colon = server.rfind(':');
+            if(colon != std::string::npos && server.find('.') != std::string::npos && server.find('[') == std::string::npos)
+            {
+                std::string maybeHost = server.substr(0, colon);
+                if(isIPv4(maybeHost))
+                    server = maybeHost;
+            }
+
+            std::string key = server + "|" + c.frontGroup;
             if(seen.count(key))
                 continue;
             seen.insert(key);
-            writeLog(0, "[chain-debug] quanX backhaul: server=" + ln.server + " → front=" + c.frontGroup, LOG_LEVEL_INFO);
-            if(isIPv4(ln.server))
-                out.push_back("ip-cidr, " + ln.server + "/32, " + c.frontGroup);
-            else if(isIPv6(ln.server))
-                out.push_back("ip6-cidr, " + ln.server + "/128, " + c.frontGroup);
+            writeLog(0, "[chain-debug] quanX backhaul: server=" + server + " → front=" + c.frontGroup, LOG_LEVEL_INFO);
+            if(isIPv4(server))
+                out.push_back("ip-cidr, " + server + "/32, " + c.frontGroup);
+            else if(isIPv6(server))
+                out.push_back("ip6-cidr, " + server + "/128, " + c.frontGroup);
             else
-                out.push_back("host, " + ln.server + ", " + c.frontGroup);
+                out.push_back("host, " + server + ", " + c.frontGroup);
         }
     }
     return out;
