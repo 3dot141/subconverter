@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <iostream>
 #include <numeric>
+#include <set>
 #include <cmath>
 #include <climits>
 
@@ -2014,7 +2015,12 @@ void proxyToQuanX(std::vector<Proxy> &nodes, INIReader &ini, std::vector<Ruleset
     }
 
     if (ext.enable_rule_generator)
-        rulesetToSurge(ini, ruleset_content_array, -1, ext.overwrite_original_rules, ext.managed_config_prefix);
+    {
+        std::set<std::string> chainNames;
+        for (const auto &c : resolved_chains)
+            if (c.valid) chainNames.insert(c.name);
+        rulesetToSurge(ini, ruleset_content_array, -1, ext.overwrite_original_rules, ext.managed_config_prefix, chainNames);
+    }
 
     // chain proxy: prepend landing backhaul rules and rewrite chain-targeted rules with via-interface=%TUN%
     if (!resolved_chains.empty()) {
