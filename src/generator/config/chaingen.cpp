@@ -162,7 +162,22 @@ void appendClashFrontGroups(const std::vector<ResolvedChain> &chains, ProxyGroup
 {
     for(const ResolvedChain &c : chains)
     {
-        if(!c.valid || c.frontIsRef)
+        if(!c.valid)
+            continue;
+
+        // chain-name group: ruleset rules reference the chain name as their policy. Point it at the
+        // landing node(s); each landing node carries dialer-proxy=<frontGroup> (set by injectClashChains),
+        // so traffic flows landing -> front -> exit. Replaces the retired relay group (rules still target
+        // the chain name in Clash, unlike QuanX which rewrites them away).
+        ProxyGroupConfig chainGroup;
+        chainGroup.Name = c.name;
+        chainGroup.Type = ProxyGroupType::Select;
+        for(const auto &ln : c.landingNodes)
+            chainGroup.Proxies.push_back("[]" + ln.tag);  // exact node reference, same as the old relay
+        groups.push_back(chainGroup);
+
+        // front helper group: only when front is a node regex (ref fronts reuse an existing group)
+        if(c.frontIsRef)
             continue;
         ProxyGroupConfig front;
         front.Name = c.frontGroup;
@@ -175,7 +190,6 @@ void appendClashFrontGroups(const std::vector<ResolvedChain> &chains, ProxyGroup
         front.Proxies.push_back(c.frontFilter);
         groups.push_back(front);
     }
-    // relay group retired (Clash now uses per-node dialer-proxy)
 }
 
 std::vector<std::string> quanXFrontPolicies(const std::vector<ResolvedChain> &chains)

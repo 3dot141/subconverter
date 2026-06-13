@@ -33,6 +33,9 @@ check() { if echo "$2" | grep -q "$3"; then echo "ok: $1"; else echo "FAIL: $1 (
 check "clash dialer-proxy"     "$CLASH" "dialer-proxy: JP-Chain-front"
 check "clash landing node"     "$CLASH" "my-jp-vps"
 check "clash front helper"     "$CLASH" "JP-Chain-front"
+# chain-name group: rules target the chain name as a policy, so a group named after the chain must exist
+# (regression guard for "proxy [JP-Chain] not found" when the retired relay group left no replacement).
+check "clash chain-name group" "$CLASH" "name: JP-Chain,"
 if echo "$CLASH" | grep -q "type: relay"; then echo "FAIL: clash relay group not retired"; fail=1; else echo "ok: clash no relay group"; fi
 check "quanx backhaul ip-cidr" "$QUANX" "ip-cidr, 203.0.113.9/32"
 check "quanx via-interface"    "$QUANX" "via-interface=%TUN%"
