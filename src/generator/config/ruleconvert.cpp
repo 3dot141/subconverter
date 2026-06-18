@@ -348,13 +348,6 @@ void rulesetToSurge(INIReader &base_rule, std::vector<RulesetContent> &ruleset_c
         }
         else
         {
-            if(surge_ver == -1 && x.rule_type == RULESET_QUANX && isLink(rule_path)
-               && !chain_names.count(rule_group))
-            {
-                strLine = rule_path + ", tag=" + rule_group + ", force-policy=" + rule_group + ", enabled=true";
-                base_rule.set("filter_remote", "{NONAME}", strLine);
-                continue;
-            }
             if(fileExist(rule_path))
             {
                 if(surge_ver > 2 && !remote_path_prefix.empty())

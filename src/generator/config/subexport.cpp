@@ -1730,11 +1730,6 @@ std::string proxyToQuanX(std::vector<Proxy> &nodes, const std::string &base_conf
 
     ini.to_file("quanx_conf.ini");
 
-    ini.erase_section("server_local");
-    ini.set_current_section("server_remote");
-    ini.erase_section();
-    ini.set("{NONAME}", ext.managed_config_prefix + "/getNodes?type=2&token=" + global.accessToken + ", tag=airport, enabled=true");
-
     return ini.to_string();
 }
 
