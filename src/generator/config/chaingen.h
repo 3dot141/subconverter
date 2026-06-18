@@ -36,14 +36,13 @@ void injectClashChains(const ChainConfigs &chains, std::vector<Proxy> &nodes,
 // Clash (called AFTER the node loop): append "<name>-front" helper groups; no longer generates a relay group.
 void appendClashFrontGroups(const std::vector<ResolvedChain> &chains, ProxyGroupConfigs &groups);
 
-// QuanX: "static=<name>-front, server-tag-regex=<filter>" lines for chains whose front is a regex.
+// QuanX: chain-name policy + front helper policy lines for [policy] section.
 std::vector<std::string> quanXFrontPolicies(const std::vector<ResolvedChain> &chains);
 
 // QuanX: backhaul filter lines "ip-cidr, <ip>/32, <front>" or "host, <domain>, <front>" (deduped by landing+front).
 std::vector<std::string> quanXBackhaulRules(const std::vector<ResolvedChain> &chains);
 
-// QuanX: rewrite filter_local lines whose policy field == a chain name into
-// "<type>, <pattern>, <landingTag>, ..., via-interface=%TUN%".
-void rewriteQuanXChainRules(INIReader &ini, const std::vector<ResolvedChain> &chains);
+// QuanX: write backhaul rules into the chain_filter section (served by /getLanding endpoint).
+void writeQuanXChainFilter(INIReader &ini, const std::vector<ResolvedChain> &chains);
 
 #endif // CHAINGEN_H_INCLUDED

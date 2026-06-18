@@ -270,6 +270,8 @@ int main(int argc, char *argv[])
 
     webServer.append_response("GET", "/getNodes", "text/plain;charset=utf-8", getNodes);
 
+    webServer.append_response("GET", "/getLanding", "text/plain;charset=utf-8", getLanding);
+
     webServer.append_response("GET", "/getruleset", "text/plain;charset=utf-8", getRuleset);
 
     webServer.append_response("GET", "/getprofile", "text/plain;charset=utf-8", getProfile);

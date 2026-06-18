@@ -37,8 +37,13 @@ check "clash front helper"     "$CLASH" "JP-Chain-front"
 # (regression guard for "proxy [JP-Chain] not found" when the retired relay group left no replacement).
 check "clash chain-name group" "$CLASH" "name: JP-Chain,"
 if echo "$CLASH" | grep -q "type: relay"; then echo "FAIL: clash relay group not retired"; fail=1; else echo "ok: clash no relay group"; fi
-check "quanx backhaul ip-cidr" "$QUANX" "ip-cidr, 203.0.113.9/32"
-check "quanx via-interface"    "$QUANX" "via-interface=%TUN%"
+
+# QuanX chain: filter_remote approach (backhaul via getLanding, chain-name policy in [policy])
+check "quanx transfer-landing" "$QUANX" "tag=transfer-landing"
+check "quanx chain-name policy" "$QUANX" "static=JP-Chain,"
+check "quanx chain-name policy US" "$QUANX" "static=US-Chain,"
+# inline rules target chain name directly (no via-interface rewrite)
+check "quanx inline JP-Chain"  "$QUANX" "DOMAIN-SUFFIX,google.com,JP-Chain"
 
 # BF1 — anytls QuanX line
 check "quanx anytls line"      "$QUANX" "anytls = 198.51.100.50:4048"
@@ -47,8 +52,5 @@ check "quanx anytls tls-host"  "$QUANX" "tls-host=cdn.example.com"
 
 # BF2+BF3+BF4 — multi-node landing via []group ref
 check "clash LD-US dialer"     "$CLASH" "dialer-proxy: US-Chain-front"
-check "quanx backhaul vps1"    "$QUANX" "ip-cidr, 192.0.2.11/32"
-check "quanx backhaul vps2"    "$QUANX" "ip-cidr, 192.0.2.12/32"
-check "quanx landing group"    "$QUANX" "usa-landing, via-interface=%TUN%"
 
 if [ $fail -eq 0 ]; then echo "PASS"; else echo "----- /tmp/subconv_chain.log -----"; tail -20 /tmp/subconv_chain.log; exit 1; fi

@@ -186,6 +186,31 @@ std::string getNodes(RESPONSE_CALLBACK_ARGS) {
     return "Not Found";
 }
 
+std::string getLanding(RESPONSE_CALLBACK_ARGS) {
+    int *status_code = &response.status_code;
+    auto token = getUrlArg(request.argument, "token");
+
+    if (token != global.accessToken) {
+        *status_code = 403;
+        return "Forbidden";
+    }
+
+    if (!fileExist("quanx_conf.ini")) {
+        *status_code = 404;
+        return "Not Found";
+    }
+
+    INIReader ini;
+    if (ini.parse_file("quanx_conf.ini") == INIREADER_EXCEPTION_NONE && ini.section_exist("chain_filter")) {
+        std::string result;
+        ini.get_section_content("chain_filter", result);
+        *status_code = 200;
+        return result;
+    }
+    *status_code = 404;
+    return "Not Found";
+}
+
 std::string getRuleset(RESPONSE_CALLBACK_ARGS) {
     auto &argument = request.argument;
     int *status_code = &response.status_code;

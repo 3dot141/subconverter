@@ -279,7 +279,7 @@ std::string rulesetToClashStr(YAML::Node &base_rule, std::vector<RulesetContent>
     return output_content;
 }
 
-void rulesetToSurge(INIReader &base_rule, std::vector<RulesetContent> &ruleset_content_array, int surge_ver, bool overwrite_original_rules, const std::string &remote_path_prefix, const std::set<std::string> &chain_names)
+void rulesetToSurge(INIReader &base_rule, std::vector<RulesetContent> &ruleset_content_array, int surge_ver, bool overwrite_original_rules, const std::string &remote_path_prefix)
 {
     string_array allRules;
     std::string rule_group, rule_path, rule_path_typed, retrieved_rules, strLine;
@@ -348,8 +348,7 @@ void rulesetToSurge(INIReader &base_rule, std::vector<RulesetContent> &ruleset_c
         }
         else
         {
-            if(surge_ver == -1 && x.rule_type == RULESET_QUANX && isLink(rule_path)
-               && !chain_names.count(rule_group))
+            if(surge_ver == -1 && x.rule_type == RULESET_QUANX && isLink(rule_path))
             {
                 strLine = rule_path + ", tag=" + rule_group + ", force-policy=" + rule_group + ", enabled=true";
                 base_rule.set("filter_remote", "{NONAME}", strLine);
@@ -365,8 +364,7 @@ void rulesetToSurge(INIReader &base_rule, std::vector<RulesetContent> &ruleset_c
                     allRules.emplace_back(strLine);
                     continue;
                 }
-                else if(surge_ver == -1 && !remote_path_prefix.empty()
-                        && !chain_names.count(rule_group))
+                else if(surge_ver == -1 && !remote_path_prefix.empty())
                 {
                     strLine = remote_path_prefix + "/getruleset?type=2&url=" + urlSafeBase64Encode(rule_path_typed) + "&group=" + urlSafeBase64Encode(rule_group);
                     strLine += ", tag=" + rule_group + ", enabled=true";
@@ -400,8 +398,7 @@ void rulesetToSurge(INIReader &base_rule, std::vector<RulesetContent> &ruleset_c
                     allRules.emplace_back(strLine);
                     continue;
                 }
-                else if(surge_ver == -1 && !remote_path_prefix.empty()
-                        && !chain_names.count(rule_group))
+                else if(surge_ver == -1 && !remote_path_prefix.empty())
                 {
                     strLine = remote_path_prefix + "/getruleset?type=2&url=" + urlSafeBase64Encode(rule_path_typed) + "&group=" + urlSafeBase64Encode(rule_group);
                     strLine += ", tag=" + rule_group + ", enabled=true";

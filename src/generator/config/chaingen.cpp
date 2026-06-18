@@ -200,6 +200,17 @@ std::vector<std::string> quanXFrontPolicies(const std::vector<ResolvedChain> &ch
         if(!c.valid)
             continue;
 
+        // chain-name policy: rules target the chain name as their policy (force-policy or inline).
+        // Points to landing node(s) so traffic flows through the chain.
+        std::string chainLine = "static=" + c.name;
+        if(c.landingIsGroupRef)
+            chainLine += ", " + c.landingGroup;
+        else
+            for(const auto &ln : c.landingNodes)
+                chainLine += ", " + ln.tag;
+        out.push_back(chainLine);
+
+        // front helper policy: only when front is a node regex (ref fronts reuse an existing group)
         if(c.frontIsRef)
             continue;
         std::string t = c.frontType == "url-test" ? "url-latency-benchmark" : "static";
@@ -247,52 +258,12 @@ std::vector<std::string> quanXBackhaulRules(const std::vector<ResolvedChain> &ch
     return out;
 }
 
-void rewriteQuanXChainRules(INIReader &ini, const std::vector<ResolvedChain> &chains)
+void writeQuanXChainFilter(INIReader &ini, const std::vector<ResolvedChain> &chains)
 {
-    std::set<std::string> chainNames;
-    for(const ResolvedChain &c : chains)
-        if(c.valid)
-            chainNames.insert(c.name);
-    if(chainNames.empty())
+    auto rules = quanXBackhaulRules(chains);
+    if(rules.empty())
         return;
-
-    auto landingOf = [&](const std::string &name) -> std::string {
-        for(const ResolvedChain &c : chains)
-            if(c.valid && c.name == name)
-                return c.landingIsGroupRef ? c.landingGroup : c.landingNodes[0].tag;
-        return std::string();
-    };
-
-    string_array items;
-    ini.set_current_section("filter_local");
-    ini.get_all("{NONAME}", items);
-
-    std::vector<std::string> rebuilt;
-    for(std::string line : items)
-    {
-        string_array parts = split(line, ",");
-        int policyIdx = -1;
-        for(size_t i = 0; i < parts.size(); i++)
-        {
-            if(chainNames.count(trim(parts[i])))
-            {
-                policyIdx = static_cast<int>(i);
-                break;
-            }
-        }
-        if(policyIdx >= 0)
-        {
-            parts[policyIdx] = " " + landingOf(trim(parts[policyIdx]));
-            line = join(parts, ",") + ", via-interface=%TUN%";
-        }
-        rebuilt.push_back(line);
-    }
-
-    ini.erase_section();
-    // backhaul rules first (first-match priority: connections to the landing must hit the front),
-    // then the (rewritten) ruleset rules.
-    for(const std::string &r : quanXBackhaulRules(chains))
+    ini.set_current_section("chain_filter");
+    for(const std::string &r : rules)
         ini.set("{NONAME}", r);
-    for(const std::string &l : rebuilt)
-        ini.set("{NONAME}", l);
 }

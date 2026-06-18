@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <iostream>
 #include <numeric>
-#include <set>
 #include <cmath>
 #include <climits>
 
@@ -1735,6 +1734,24 @@ std::string proxyToQuanX(std::vector<Proxy> &nodes, const std::string &base_conf
     ini.erase_section();
     ini.set("{NONAME}", ext.managed_config_prefix + "/getNodes?type=2&token=" + global.accessToken + ", tag=airport, enabled=true");
 
+    // chain proxy: prepend getLanding entry to filter_remote for backhaul priority
+    if(ini.section_exist("chain_filter"))
+    {
+        string_array chainRules;
+        ini.get_all("chain_filter", "{NONAME}", chainRules);
+        if(!chainRules.empty())
+        {
+            string_array existing;
+            ini.get_all("filter_remote", "{NONAME}", existing);
+            ini.set_current_section("filter_remote");
+            ini.erase_section();
+            ini.set("{NONAME}", ext.managed_config_prefix + "/getLanding?token=" + global.accessToken + ", tag=transfer-landing, enabled=true");
+            for(const std::string &e : existing)
+                ini.set("{NONAME}", e);
+        }
+        ini.erase_section("chain_filter");
+    }
+
     return ini.to_string();
 }
 
@@ -2015,17 +2032,12 @@ void proxyToQuanX(std::vector<Proxy> &nodes, INIReader &ini, std::vector<Ruleset
     }
 
     if (ext.enable_rule_generator)
-    {
-        std::set<std::string> chainNames;
-        for (const auto &c : resolved_chains)
-            if (c.valid) chainNames.insert(c.name);
-        rulesetToSurge(ini, ruleset_content_array, -1, ext.overwrite_original_rules, ext.managed_config_prefix, chainNames);
-    }
+        rulesetToSurge(ini, ruleset_content_array, -1, ext.overwrite_original_rules, ext.managed_config_prefix);
 
-    // chain proxy: prepend landing backhaul rules and rewrite chain-targeted rules with via-interface=%TUN%
+    // chain proxy: write backhaul rules to chain_filter section (served by /getLanding endpoint)
     if (!resolved_chains.empty()) {
-        writeLog(0, "[chain-debug] quanX rewriting chain rules, resolved_chains=" + std::to_string(resolved_chains.size()), LOG_LEVEL_INFO);
-        rewriteQuanXChainRules(ini, resolved_chains);
+        writeLog(0, "[chain-debug] quanX writing chain filter, resolved_chains=" + std::to_string(resolved_chains.size()), LOG_LEVEL_INFO);
+        writeQuanXChainFilter(ini, resolved_chains);
     }
 }
 
